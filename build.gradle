@@ -1,0 +1,121 @@
+buildscript {
+    ext {
+        springBootVersion = '2.7.0'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+allprojects {
+    group = 'com.example'
+    version = '0.0.1-SNAPSHOT'
+}
+
+subprojects {
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'java'
+
+    sourceCompatibility = '11'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    }
+
+    // settings.gradle에 module include 시 src 디렉토리 생성
+    task initSourceFolders {
+        if (!project.rootProject) { // root project는 생성 대상에서 제외
+            sourceSets*.java.srcDirs*.each {
+                if (!it.exists()) {
+                    it.mkdirs()
+                }
+            }
+            sourceSets*.resources.srcDirs*.each {
+                if (!it.exists()) {
+                    it.mkdirs()
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 각 모듈 별 설정
+ *
+ * 모듈안에 build.gradle 파일을 만들고 작성해도 동일하게 동작한다.
+ * 파일 하나에서 관리하고 싶으면 아래와 같이 작성한다.
+ *
+ * api는 의존성이 전파된다. 따라서, implementation을 권장한다.
+ * */
+
+project(':application:external-api') {
+    dependencies {
+        implementation project(':kafka:event-consumer')
+        implementation project(':kafka:event-producer')
+        implementation project(':domain:core')
+        implementation project(':domain:api')
+
+        // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-webflux
+        implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    }
+}
+
+project(':application:internal-api') {
+    dependencies {
+        implementation project(':domain:core')
+        implementation project(':domain:api')
+
+        // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-web
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+    }
+}
+
+project(':domain:api') {
+    bootJar.enabled = false
+    jar.enabled = true
+
+    dependencies {
+        implementation project(':domain:core')
+    }
+}
+
+project(':kafka:event-consumer') {
+    bootJar.enabled = false
+    jar.enabled = true
+
+    dependencies {
+        // https://mvnrepository.com/artifact/org.springframework.kafka/spring-kafka
+        implementation 'org.springframework.kafka:spring-kafka'
+
+        // https://mvnrepository.com/artifact/org.springframework.data/spring-data-r2dbc
+        implementation 'org.springframework.data:spring-data-r2dbc'
+
+        /**
+         * 각 데이터베이스에 Spring Data R2DBC가 접근하기 위해 드라이버가 필요하다.
+         * <a href="https://r2dbc.io/drivers/">R2DBC Drivers</a>
+         * */
+        // https://mvnrepository.com/artifact/com.github.jasync-sql/jasync-mysql
+        implementation 'com.github.jasync-sql:jasync-r2dbc-mysql:2.1.24'
+
+        // https://mvnrepository.com/artifact/io.r2dbc/r2dbc-h2
+        testImplementation 'io.r2dbc:r2dbc-h2:1.0.0.RELEASE'
+    }
+}
+
+project(':kafka:event-producer') {
+    bootJar.enabled = false
+    jar.enabled = true
+
+    dependencies {
+        // https://mvnrepository.com/artifact/org.springframework.kafka/spring-kafka
+        implementation 'org.springframework.kafka:spring-kafka'
+    }
+}
