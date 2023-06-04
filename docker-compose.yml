@@ -1,0 +1,28 @@
+version: '2'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest # 실사용시에는 버전 지정 권장
+    environment:
+      ZOOKEEPER_SERVER_ID: 1 # 주키퍼 클러스터에서 주키퍼를 식별할 아이디. 동일 클러스터 내에서는 중복되면 안됨. 단일 브로커에서는 의미없음.
+      ZOOKEEPER_CLIENT_PORT: 2181 # 주키퍼 포트번호. Default 2181
+      ZOOKEEPER_TICK_TIME: 2000 # 클러스터 구성 시 동기화를 위한 기본 틱 타임 지정. ms 단위
+      ZOOKEEPER_INIT_LIMIT: 5 # 주키퍼 초기화를 위한 제한 시간 설정. 쿼럼 과정에서 마스터를 선출. 리더에게 커넥션을 맺을 때 지정할 초기 타임아웃 시간. tick time * init limit
+      ZOOKEEPER_SYNC_LIMIT: 2 # 리더와 나머지 서버들의 싱크 타임. tick time * sync time. 시간 내에 들어와야 헬스체크가 됨.
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper # 주키퍼 컨테이너 실행 이후 kafka 컨테이너가 동작
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181' # 카프카가 주키퍼에 커넥션하기 위한 대상 지정
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092 # 외부에서 접속하기 위한 리스너 설정
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT # 보안을 위한 프로토콜 매핑
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT # 도커 내부에서 사용할 리스너 이름 지정
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 # 단일 브로커인 경우 1로 지정. 멀티 브로커는 기본값을 사용하므로 이 설정이 필요 없음.
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0 # 카프카 그룹이 초기 리밸런싱할 때 컨슈머들이 컨슈머 그룹에 조인할 때 대기 시간.
