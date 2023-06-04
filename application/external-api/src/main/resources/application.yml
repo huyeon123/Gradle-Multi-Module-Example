@@ -1,0 +1,19 @@
+spring:
+  r2dbc:
+    url: r2dbc:mysql://localhost:3306/user-event
+    username:
+    password:
+  kafka:
+    bootstrap-servers: localhost:29092 # kafka 서버와 연결할 Host 및 Port (producer와 consumer가 따로 존재한다면 각각 기술)
+    consumer:
+      group-id: multi-test # 해당 어플리케이션을 어떤 컨슈머 그룹에 속하게 할 것인지 지정
+      auto-offset-reset: earliest # offset이란 파티션 안에 데이터 위치를 의미. kafka 서버에 초기 offset이 없거나, 현재 offset이 더 이상 없는 경우 수행할 작업. earliest: 가장 오래된 메세지로 offset reset
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+logging:
+  level:
+    org.springframework.r2dbc: DEBUG
